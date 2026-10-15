@@ -1,0 +1,201 @@
+﻿<Window x:Class="LinuxControlPanel.DashboardWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Linux Control Panel — 대시보드"
+        Width="1240" Height="840" MinWidth="1040" MinHeight="720"
+        WindowStartupLocation="CenterScreen"
+        FontFamily="Segoe UI, Malgun Gothic"
+        Background="{StaticResource AppBackgroundBrush}"
+        Loaded="Window_Loaded"
+        Closing="Window_Closing">
+
+    <Grid Margin="16" RowDefinitions="Auto,*,Auto">
+
+        <Border Grid.Row="0" Style="{StaticResource Card}">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0">
+                    <TextBlock x:Name="HostTitleText" Foreground="{StaticResource TextBrush}" FontSize="20" FontWeight="SemiBold" Text="연결 중..." />
+                    <TextBlock x:Name="HostSubtitleText" Style="{StaticResource Muted}" Margin="0,4,0,0" />
+                    <TextBlock x:Name="FingerprintText" Style="{StaticResource Muted}" Margin="0,2,0,0" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <CheckBox x:Name="AutoRefreshCheck" Content="자동 새로고침" IsChecked="True"
+                                  Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"
+                                  Checked="AutoRefreshCheck_Changed" Unchecked="AutoRefreshCheck_Changed" />
+                        <ComboBox x:Name="IntervalCombo" Width="92" Height="28" Margin="12,0,0,0"
+                                  SelectedIndex="1" SelectionChanged="IntervalCombo_SelectionChanged">
+                            <ComboBoxItem Content="2초" Tag="2" />
+                            <ComboBoxItem Content="3초" Tag="3" />
+                            <ComboBoxItem Content="5초" Tag="5" />
+                            <ComboBoxItem Content="10초" Tag="10" />
+                        </ComboBox>
+                        <Button x:Name="RefreshButton" Content="새로고침" Width="90" Height="28" Margin="12,0,0,0" Click="RefreshButton_Click" />
+                        <Button x:Name="DisconnectButton" Content="연결 끊기" Width="90" Height="28" Margin="8,0,0,0" Click="DisconnectButton_Click" />
+                    </StackPanel>
+                    <TextBlock x:Name="RefreshStateText" Style="{StaticResource Muted}" HorizontalAlignment="Right" Margin="0,10,0,0" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
+            <Grid ColumnDefinitions="*,16,*">
+
+                <StackPanel Grid.Column="0">
+
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="CPU" />
+                            <Grid ColumnDefinitions="Auto,*">
+                                <TextBlock x:Name="CpuPercentText" Style="{StaticResource Metric}" Text="-" VerticalAlignment="Center" />
+                                <StackPanel Grid.Column="1" Margin="16,4,0,0" VerticalAlignment="Center">
+                                    <TextBlock x:Name="CpuModelText" Style="{StaticResource Body}" />
+                                    <TextBlock x:Name="CpuDetailText" Style="{StaticResource Muted}" Margin="0,3,0,0" />
+                                </StackPanel>
+                            </Grid>
+                            <ProgressBar x:Name="CpuMeter" Style="{StaticResource Meter}" Margin="0,12,0,0" />
+                            <ItemsControl x:Name="CoreList" Margin="0,14,0,0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="56,*,70" Margin="0,3">
+                                            <TextBlock Text="{Binding Name}" Style="{StaticResource Muted}" VerticalAlignment="Center" />
+                                            <ProgressBar Grid.Column="1" Style="{StaticResource ThinMeter}" Value="{Binding Percent}" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="2" Text="{Binding PercentText}" Style="{StaticResource Muted}"
+                                                       HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="메모리" />
+                            <Grid ColumnDefinitions="Auto,*">
+                                <TextBlock x:Name="MemoryPercentText" Style="{StaticResource Metric}" Text="-" VerticalAlignment="Center" />
+                                <TextBlock x:Name="MemoryDetailText" Grid.Column="1" Style="{StaticResource Body}"
+                                           Margin="16,0,0,0" VerticalAlignment="Center" />
+                            </Grid>
+                            <ProgressBar x:Name="MemoryMeter" Style="{StaticResource Meter}" Margin="0,12,0,0" />
+                            <TextBlock x:Name="SwapDetailText" Style="{StaticResource Muted}" Margin="0,14,0,4" />
+                            <ProgressBar x:Name="SwapMeter" Style="{StaticResource ThinMeter}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="디스크" />
+                            <ItemsControl x:Name="DiskList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="0,0,0,12">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Text="{Binding MountPoint}" Style="{StaticResource Body}" FontWeight="SemiBold" />
+                                                <TextBlock Grid.Column="1" Text="{Binding PercentText}" Style="{StaticResource Muted}" />
+                                            </Grid>
+                                            <ProgressBar Style="{StaticResource ThinMeter}" Value="{Binding UsedPercent}" Margin="0,5,0,4" />
+                                            <TextBlock Text="{Binding UsageText}" Style="{StaticResource Muted}" />
+                                            <TextBlock Text="{Binding FileSystem}" Style="{StaticResource Muted}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                </StackPanel>
+
+                <StackPanel Grid.Column="2">
+
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="네트워크" />
+                            <ItemsControl x:Name="NetworkList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="120,*,*" Margin="0,0,0,8">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Name}" Style="{StaticResource Body}" FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding TotalText}" Style="{StaticResource Muted}" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1" Text="{Binding DownText}" Style="{StaticResource Body}" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="2" Text="{Binding UpText}" Style="{StaticResource Body}" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="CPU 사용 상위 프로세스" />
+                            <Grid ColumnDefinitions="70,*,70,70" Margin="0,0,0,6">
+                                <TextBlock Text="PID" Style="{StaticResource Muted}" />
+                                <TextBlock Grid.Column="1" Text="명령" Style="{StaticResource Muted}" />
+                                <TextBlock Grid.Column="2" Text="CPU" Style="{StaticResource Muted}" HorizontalAlignment="Right" />
+                                <TextBlock Grid.Column="3" Text="메모리" Style="{StaticResource Muted}" HorizontalAlignment="Right" />
+                            </Grid>
+                            <ItemsControl x:Name="ProcessList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="70,*,70,70" Margin="0,2">
+                                            <TextBlock Text="{Binding Pid}" Style="{StaticResource Muted}" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Command}" Style="{StaticResource Body}" />
+                                            <TextBlock Grid.Column="2" Text="{Binding CpuText}" Style="{StaticResource Body}" HorizontalAlignment="Right" />
+                                            <TextBlock Grid.Column="3" Text="{Binding MemoryText}" Style="{StaticResource Muted}" HorizontalAlignment="Right" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="접속 중인 사용자" />
+                            <ItemsControl x:Name="UserList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="120,*" Margin="0,2">
+                                            <TextBlock Text="{Binding Name}" Style="{StaticResource Body}" FontWeight="SemiBold" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Detail}" Style="{StaticResource Muted}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock x:Name="NoUsersText" Style="{StaticResource Muted}" Text="로그인 중인 사용자가 없습니다." Visibility="Collapsed" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="명령 실행" />
+                            <Grid ColumnDefinitions="*,8,90">
+                                <TextBox x:Name="CommandBox" Height="30" KeyDown="CommandBox_KeyDown" />
+                                <Button x:Name="RunCommandButton" Grid.Column="2" Content="실행" Height="30" Click="RunCommandButton_Click" />
+                            </Grid>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <Button Content="가동 시간" Tag="uptime" Padding="10,3" Margin="0,0,6,0" Click="PresetButton_Click" />
+                                <Button Content="디스크" Tag="df -h" Padding="10,3" Margin="0,0,6,0" Click="PresetButton_Click" />
+                                <Button Content="메모리" Tag="free -h" Padding="10,3" Margin="0,0,6,0" Click="PresetButton_Click" />
+                                <Button Content="실패한 서비스" Tag="systemctl --failed --no-pager" Padding="10,3" Margin="0,0,6,0" Click="PresetButton_Click" />
+                                <Button Content="커널 로그" Tag="dmesg | tail -n 40" Padding="10,3" Click="PresetButton_Click" />
+                            </StackPanel>
+                            <TextBox x:Name="CommandOutputBox" Height="240" Margin="0,10,0,0"
+                                     IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap"
+                                     FontFamily="Consolas, Malgun Gothic" FontSize="12"
+                                     Background="{StaticResource ConsoleBrush}" Foreground="{StaticResource TextBrush}"
+                                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
+                        </StackPanel>
+                    </Border>
+
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+
+        <TextBlock x:Name="StatusText" Grid.Row="2" Style="{StaticResource Muted}" Margin="2,12,0,0" TextWrapping="Wrap" />
+    </Grid>
+</Window>
