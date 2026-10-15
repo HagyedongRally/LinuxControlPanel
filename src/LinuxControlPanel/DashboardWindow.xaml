@@ -39,7 +39,10 @@
             </Grid>
         </Border>
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
+        <TabControl x:Name="PageTabs" Grid.Row="1" Style="{StaticResource PageTabs}" SelectionChanged="PageTabs_SelectionChanged">
+
+        <TabItem x:Name="SystemTab" Header="시스템 정보">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
             <Grid ColumnDefinitions="*,16,*">
 
                 <StackPanel Grid.Column="0">
@@ -195,6 +198,93 @@
                 </StackPanel>
             </Grid>
         </ScrollViewer>
+        </TabItem>
+
+        <TabItem x:Name="ServicesTab" Header="서비스">
+            <Grid RowDefinitions="Auto,*">
+
+                <Border Grid.Row="0" Style="{StaticResource Card}" Padding="12">
+                    <Grid ColumnDefinitions="Auto,240,16,Auto,130,*,Auto">
+                        <TextBlock Text="검색" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBox x:Name="ServiceSearchBox" Grid.Column="1" Height="28" VerticalContentAlignment="Center"
+                                 TextChanged="ServiceFilter_Changed" />
+                        <TextBlock Grid.Column="3" Text="상태" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <ComboBox x:Name="ServiceFilterCombo" Grid.Column="4" Height="28" SelectedIndex="1"
+                                  SelectionChanged="ServiceFilter_Changed">
+                            <ComboBoxItem Content="전체" Tag="all" />
+                            <ComboBoxItem Content="실행 중" Tag="running" />
+                            <ComboBoxItem Content="실패" Tag="failed" />
+                            <ComboBoxItem Content="중지됨" Tag="stopped" />
+                            <ComboBoxItem Content="자동 시작" Tag="enabled" />
+                        </ComboBox>
+                        <TextBlock x:Name="ServiceSummaryText" Grid.Column="5" Style="{StaticResource Muted}"
+                                   VerticalAlignment="Center" Margin="16,0,0,0" />
+                        <Button x:Name="ServiceRefreshButton" Grid.Column="6" Content="목록 새로고침" Width="110" Height="28"
+                                Click="ServiceRefreshButton_Click" />
+                    </Grid>
+                </Border>
+
+                <Grid Grid.Row="1" ColumnDefinitions="3*,16,2*">
+
+                    <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0">
+                        <Grid RowDefinitions="Auto,*">
+                            <Grid ColumnDefinitions="18,*,110,90,1.4*" Margin="6,0,6,6">
+                                <TextBlock Grid.Column="1" Text="서비스" Style="{StaticResource Muted}" />
+                                <TextBlock Grid.Column="2" Text="상태" Style="{StaticResource Muted}" />
+                                <TextBlock Grid.Column="3" Text="자동 시작" Style="{StaticResource Muted}" />
+                                <TextBlock Grid.Column="4" Text="설명" Style="{StaticResource Muted}" />
+                            </Grid>
+                            <ListBox x:Name="ServiceList" Grid.Row="1" Style="{StaticResource DarkList}"
+                                     VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                                     SelectionChanged="ServiceList_SelectionChanged">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="18,*,110,90,1.4*">
+                                            <Ellipse Width="8" Height="8" Fill="{Binding StateBrush}" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Name}" Style="{StaticResource Body}" FontWeight="SemiBold" Margin="0,0,8,0" />
+                                            <TextBlock Grid.Column="2" Text="{Binding StateText}" Style="{StaticResource Body}" Foreground="{Binding StateBrush}" />
+                                            <TextBlock Grid.Column="3" Text="{Binding EnabledText}" Style="{StaticResource Muted}" />
+                                            <TextBlock Grid.Column="4" Text="{Binding Description}" Style="{StaticResource Muted}" ToolTip="{Binding Description}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Column="2" Style="{StaticResource Card}" Margin="0">
+                        <Grid RowDefinitions="Auto,Auto,Auto,*">
+                            <TextBlock x:Name="ServiceDetailTitle" Style="{StaticResource CardTitle}" FontSize="16"
+                                       Text="서비스를 선택하세요" />
+                            <TextBlock x:Name="ServiceDetailSubtitle" Grid.Row="1" Style="{StaticResource Muted}"
+                                       TextWrapping="Wrap" Margin="0,-4,0,10" />
+                            <ItemsControl x:Name="ServicePropertyList" Grid.Row="2">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="92,*" Margin="0,2">
+                                            <TextBlock Text="{Binding Label}" Style="{StaticResource Muted}" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Value}" Style="{StaticResource Body}"
+                                                       TextTrimming="None" TextWrapping="Wrap" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <DockPanel Grid.Row="3" Margin="0,12,0,0">
+                                <TextBlock DockPanel.Dock="Top" Text="systemctl status (최근 로그 30줄)" Style="{StaticResource Muted}" Margin="0,0,0,4" />
+                                <TextBox x:Name="ServiceStatusBox" MinHeight="120"
+                                         IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap"
+                                         FontFamily="Consolas, Malgun Gothic" FontSize="12"
+                                         Background="{StaticResource ConsoleBrush}" Foreground="{StaticResource TextBrush}"
+                                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
+                            </DockPanel>
+                        </Grid>
+                    </Border>
+
+                </Grid>
+            </Grid>
+        </TabItem>
+
+        </TabControl>
 
         <TextBlock x:Name="StatusText" Grid.Row="2" Style="{StaticResource Muted}" Margin="2,12,0,0" TextWrapping="Wrap" />
     </Grid>

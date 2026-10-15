@@ -10,7 +10,8 @@ using LinuxControlPanel.Views;
 namespace LinuxControlPanel;
 
 /// <summary>
-/// 로그인 후 첫 화면. 대상 PC 의 CPU/메모리/디스크/네트워크/프로세스를 주기적으로 읽어 보여 준다.
+/// 로그인 후 첫 화면. 첫 페이지는 대상 PC 의 CPU/메모리/디스크/네트워크/프로세스를 주기적으로 읽어 보여 주고,
+/// 두 번째 페이지(DashboardWindow.Services.cs)는 서비스 목록을 보여 준다.
 /// 수집은 SSH 한 번으로 끝내고, UI 갱신은 항상 Dispatcher 스레드에서만 한다.
 /// </summary>
 public partial class DashboardWindow : Window
@@ -65,9 +66,26 @@ public partial class DashboardWindow : Window
         _session.Dispose();
     }
 
-    private async void OnTimerTick(object? sender, EventArgs e) => await RefreshAsync(manual: false);
+    private async void OnTimerTick(object? sender, EventArgs e)
+    {
+        // 보이지 않는 시스템 정보 페이지는 갱신하지 않는다(서비스 상세 요청과 SSH 를 다투지 않게).
+        if (!ServicesTabActive)
+        {
+            await RefreshAsync(manual: false);
+        }
+    }
 
-    private void RefreshButton_Click(object sender, RoutedEventArgs e) => _ = RefreshAsync(manual: true);
+    private void RefreshButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ServicesTabActive)
+        {
+            _ = RefreshServicesAsync();
+        }
+        else
+        {
+            _ = RefreshAsync(manual: true);
+        }
+    }
 
     private void AutoRefreshCheck_Changed(object sender, RoutedEventArgs e)
     {
@@ -132,11 +150,7 @@ public partial class DashboardWindow : Window
             // 연결이 끊긴 게 분명하거나 연속으로 실패하면 자동 갱신을 멈춘다.
             if (!_session.IsConnected || _failureCount >= 3)
             {
-                _connectionLost = true;
-                _timer.Stop();
-                AutoRefreshCheck.IsChecked = false;
-                RefreshStateText.Text = "연결 끊김";
-                SetStatus("연결이 끊어졌습니다. [연결 끊기] 를 눌러 접속 화면으로 돌아가 다시 접속하세요.", isError: true);
+                MarkConnectionLost();
             }
         }
         finally
@@ -144,6 +158,26 @@ public partial class DashboardWindow : Window
             _refreshing = false;
             RefreshButton.IsEnabled = !_connectionLost;
         }
+    }
+
+    /// <summary>다른 페이지에서 요청이 실패했을 때 연결이 끊긴 것인지 확인한다.</summary>
+    private void CheckConnection()
+    {
+        if (!_connectionLost && !_session.IsConnected)
+        {
+            MarkConnectionLost();
+        }
+    }
+
+    private void MarkConnectionLost()
+    {
+        _connectionLost = true;
+        _timer.Stop();
+        AutoRefreshCheck.IsChecked = false;
+        RefreshButton.IsEnabled = false;
+        ServiceRefreshButton.IsEnabled = false;
+        RefreshStateText.Text = "연결 끊김";
+        SetStatus("연결이 끊어졌습니다. [연결 끊기] 를 눌러 접속 화면으로 돌아가 다시 접속하세요.", isError: true);
     }
 
     private void ApplySnapshot(SystemSnapshot snapshot)

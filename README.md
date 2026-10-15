@@ -10,7 +10,10 @@ UI 는 요청대로 MVVM 프레임워크 없이 **XAML + 코드비하인드**로
    - 왼쪽 **주소록**에서 지난 접속 기록을 고르면 입력란이 자동으로 채워집니다(더블클릭하면 바로 접속).
    - 처음 보는 호스트 키는 지문을 보여 주고 신뢰할지 묻습니다. 다음부터는 저장된 지문과 같으면 묻지 않고,
      **지문이 바뀌면 경고**합니다.
-2. **대시보드** (`DashboardWindow`) — 로그인 후 첫 화면
+2. **대시보드** (`DashboardWindow`) — 로그인 후 첫 화면. 위쪽 탭으로 두 페이지를 오갑니다.
+   위쪽 머리글(호스트 이름 / 배포판 / 커널 / 가동 시간, 새로고침, 연결 끊기)은 두 페이지가 같이 씁니다.
+
+   **① 시스템 정보** 페이지
    - 호스트 이름 / 배포판 / 커널 / 가동 시간 / 호스트 키 지문
    - CPU 사용률(전체 + 코어별), 모델, 코어 수, 로드 애버리지, 온도
    - 메모리·스왑 사용량, 디스크 마운트별 사용량, 인터페이스별 실시간 송수신 속도
@@ -19,6 +22,17 @@ UI 는 요청대로 MVVM 프레임워크 없이 **XAML + 코드비하인드**로
    - 자동 새로고침(2/3/5/10초) 또는 수동 새로고침
    - 디스크 사용률은 `사용 / 전체` 기준입니다. `df` 의 Use% 는 root 예약 블록을 뺀 `사용 / (사용+가용)` 이라
      같은 디스크에서 몇 % 더 높게 보입니다(예: 43.9% vs 47%).
+
+   **② 서비스** 페이지 (`DashboardWindow.Services.cs`)
+   - systemd 서비스 목록: 상태 점(실행 중 초록 / 실패 빨강 / 전환 중 노랑 / 끝난 oneshot 파랑 / 중지 회색),
+     `active (running)` 같은 상태, 자동 시작 설정(enabled/disabled/static...), 설명
+   - 올라와 있지 않은 서비스(대개 disabled)도 `list-unit-files` 로 찾아 함께 보여 줍니다
+   - 이름·설명 검색, 상태 필터(전체 / 실행 중 / 실패 / 중지됨 / 자동 시작), 전체·실행 중·실패 개수
+   - 서비스를 고르면 상세: 주 PID, 시작 시각, 메모리, CPU 시간, 작업 수, 실행 사용자, 재시작 정책과 횟수,
+     유닛 파일 경로, 실행 명령, 그리고 `systemctl status` 출력(최근 로그 30줄)
+   - 목록은 페이지를 열 때(마지막으로 읽은 지 30초가 지났으면)와 새로고침을 누를 때만 읽습니다.
+     서비스 페이지를 보는 동안에는 시스템 정보 자동 갱신을 쉽니다.
+   - 일반 사용자로 접속하면 `systemctl status` 의 로그 줄이 권한 때문에 비어 보일 수 있습니다(systemd-journal 그룹 또는 root 필요).
 
 ## 요구 사항
 
@@ -31,7 +45,7 @@ UI 는 요청대로 MVVM 프레임워크 없이 **XAML + 코드비하인드**로
 ```powershell
 dotnet build LinuxControlPanel.sln -c Release
 dotnet run --project src\LinuxControlPanel
-dotnet test LinuxControlPanel.sln          # 단위 테스트 55개
+dotnet test LinuxControlPanel.sln          # 단위 테스트 70개
 ```
 
 배포용 단일 실행 파일:
@@ -45,13 +59,15 @@ dotnet publish src\LinuxControlPanel -c Release -r win-x64 `
 
 ```
 src/LinuxControlPanel.Core/      UI 없는 핵심 로직 (net10.0)
-  Linux/   LinuxStatParser, SystemInfoCollector, SystemSnapshot, Humanize
+  Linux/   LinuxStatParser, SystemInfoCollector, SystemSnapshot, Humanize,
+           ServiceCollector(systemctl 목록/상세), ServiceTypes
   Ssh/     SshSession(SSH.NET 래퍼), 호스트 키 확인, 오류 메시지
   Storage/ AddressBookStore(JSON), ISecretProtector
   Models/  ConnectionEntry
 src/LinuxControlPanel/           WPF 앱 (net10.0-windows)
   ConnectWindow.xaml(.cs)        접속 화면 + 주소록
-  DashboardWindow.xaml(.cs)      대시보드 + 명령 실행
+  DashboardWindow.xaml(.cs)      대시보드(시스템 정보 / 서비스 탭) + 명령 실행
+  DashboardWindow.Services.cs    서비스 페이지
   Services/DpapiSecretProtector  Windows DPAPI 로 비밀 값 암호화
   Views/Rows.cs                  스냅샷 -> 화면 표시용 행
   Theme.xaml                     다크 테마 브러시/스타일
@@ -73,7 +89,9 @@ tests/LinuxControlPanel.Tests/   파서·수집기·주소록 단위 테스트 (
 
 ## 확인한 내용
 
-- 단위 테스트 55개 통과 (파서는 실제 Ubuntu 20.04 서버 출력을 고정 입력으로 두고 검증)
+- 단위 테스트 70개 통과 (파서는 실제 Ubuntu 20.04 서버 출력을 고정 입력으로 두고 검증)
 - 실제 원격 Ubuntu 20.04 서버에 개인키로 접속 -> 대시보드 실시간 표시 -> 명령 실행 -> 연결 끊기 ->
   주소록에서 재접속까지 Windows 11 에서 확인
 - 접속 실패(타임아웃/인증 실패)와 호스트 키 확인 대화상자 동작 확인
+- 서비스 페이지의 파서는 Ubuntu 20.04(systemd 245) 형식의 `systemctl` 출력으로 단위 테스트했습니다.
+  유닛 이름은 원격 셸에 들어가기 전에 허용 글자만 통과시키고 작은따옴표로 감쌉니다.
